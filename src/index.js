@@ -18,58 +18,17 @@ function Square (props) {
 }
 
 class Board extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            squares: Array(9).fill(null),
-            winner: null,
-        };
-    }
-
-    handleSquareClick(index) {
-        const { winner, squares } = this.state;
-        const { secondPlayerActive, onPlayerMadeMove } = this.props;
-
-        if (winner || squares[index]) return;
-
-        const newSquares = [...squares];
-        newSquares[index] = secondPlayerActive ? 'O' : 'X';
-
-        const newWinner = calculateWinner(newSquares) || null;
-
-        this.setState({
-            squares: newSquares,
-            winner: newWinner,
-        });
-
-        if (onPlayerMadeMove) onPlayerMadeMove();
-    }
-
     renderSquare(index) {
         return <Square
             index={index}
-            value={this.state.squares[index]}
-            onClick={(index) => this.handleSquareClick(index)}
+            value={this.props.squares[index]}
+            onClick={(index) => this.props.onClick(index)}
         />;
     }
 
     render() {
-        const { secondPlayerActive } = this.props;
-        const { winner } = this.state;
-        const playerSymbol = secondPlayerActive ? 'O' : 'X';
-
-        let status;
-
-        if (winner) {
-            status = `Winner: ${winner}`;
-        }
-        else {
-            status = `Next player: ${playerSymbol}`;
-        }
-
         return (
             <div>
-                <div className="status">{status}</div>
                 <div className="board-row">
                     {this.renderSquare(0)}
                     {this.renderSquare(1)}
@@ -94,28 +53,81 @@ class Game extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            history: [{
+                squares: Array(9).fill(null),
+                winner: null,
+            }],
+            currentHistoryIndex: 0,
             secondPlayerActive: false,
         };
     }
 
-    switchPlayer() {
+    handleClick(index){
+        const { secondPlayerActive, currentHistoryIndex } = this.state;
+        const history = this.state.history.slice(0, currentHistoryIndex + 1);
+        const current = history[history.length - 1];
+        const currentSquares = current.squares;
+
+        if (current.winner || currentSquares[index]) return;
+
+        const newSquares = [...currentSquares];
+        newSquares[index] = secondPlayerActive ? 'O' : 'X';
+
+        const newWinner = calculateWinner(newSquares) || null;
+
         this.setState({
+            history: history.concat([{
+                squares: newSquares,
+                winner: newWinner,
+            }]),
             secondPlayerActive: !this.state.secondPlayerActive,
+            currentHistoryIndex: history.length,
+        });
+    }
+
+    jumpTo(step) {
+        this.setState({
+            currentHistoryIndex: step,
+            secondPlayerActive: (step % 2) !== 0,
         });
     }
 
     render() {
+        const { secondPlayerActive, history, currentHistoryIndex } = this.state;
+        const currentHistoryStep = history[currentHistoryIndex];
+        const playerSymbol = secondPlayerActive ? 'O' : 'X';
+
+        let status;
+
+        if (currentHistoryStep.winner) {
+            status = `Winner: ${currentHistoryStep.winner}`;
+        }
+        else {
+            status = `Next player: ${playerSymbol}`;
+        }
+
+        const moves = history.map((step, moveNumber) => {
+            const desc = moveNumber ?
+                'Go to move #' + moveNumber :
+                'Go to game start';
+            return (
+                <li key={`move-${moveNumber}`}>
+                    <button onClick={() => this.jumpTo(moveNumber)}>{desc}</button>
+                </li>
+            );
+        });
+
         return (
             <div className="game">
                 <div className="game-board">
                     <Board
-                        secondPlayerActive={this.state.secondPlayerActive}
-                        onPlayerMadeMove={() => this.switchPlayer()}
+                        onClick={(index) => this.handleClick(index)}
+                        squares={currentHistoryStep.squares}
                     />
                 </div>
                 <div className="game-info">
-                    <div>{/* status */}</div>
-                    <ol>{/* TODO */}</ol>
+                    <div>{status}</div>
+                    <ol>{moves}</ol>
                 </div>
             </div>
         );
