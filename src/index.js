@@ -56,6 +56,10 @@ class Game extends React.Component {
             history: [{
                 squares: Array(9).fill(null),
                 winner: null,
+                movePos: {
+                    x: null,
+                    y: null,
+                },
             }],
             currentHistoryIndex: 0,
             secondPlayerActive: false,
@@ -64,9 +68,14 @@ class Game extends React.Component {
 
     handleClick(index){
         const { secondPlayerActive, currentHistoryIndex } = this.state;
+
         const history = this.state.history.slice(0, currentHistoryIndex + 1);
+
         const current = history[history.length - 1];
         const currentSquares = current.squares;
+
+        const xCoord = index % 3;
+        const yCoord = Math.floor(index / 3);
 
         if (current.winner || currentSquares[index]) return;
 
@@ -79,6 +88,10 @@ class Game extends React.Component {
             history: history.concat([{
                 squares: newSquares,
                 winner: newWinner,
+                movePos: {
+                    x: xCoord,
+                    y: yCoord,
+                }
             }]),
             secondPlayerActive: !this.state.secondPlayerActive,
             currentHistoryIndex: history.length,
@@ -126,6 +139,9 @@ class Game extends React.Component {
                             {desc}
                         </div>
                     </button>
+                    <div>
+                        {`x: ${step.movePos.x}, y: ${step.movePos.y}`}
+                    </div>
                 </li>
             );
         });
